@@ -5,12 +5,14 @@ import com.kharitonov.spring_jdbc.entity.City;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
 
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
+import java.sql.Statement;
 import java.util.List;
-import java.util.Map;
 
 class CityRowMapper implements RowMapper<City> {
 
@@ -29,6 +31,8 @@ class CityRowMapper implements RowMapper<City> {
 public class JdbcCityDao implements CityDao {
     private static final String SQL_SELECT_CITIES = "SELECT ID, Name, CountryCode, District, Population FROM city";
     private static final String SQL_SELECT_CITY_BY_ID = SQL_SELECT_CITIES + " WHERE ID = ?";
+    private static final String SQL_INSERT_CITY =
+            "INSERT INTO city (Name, CountryCode, District, Population) VALUES (?, ?, ?, ?)";
     private JdbcTemplate jdbcTemplate;
 
     public JdbcTemplate getJdbcTemplate() {
@@ -40,7 +44,7 @@ public class JdbcCityDao implements CityDao {
     }
 
     @Override
-    public City findById(int id) {
+    public City findById(Integer id) {
         return jdbcTemplate.queryForObject(SQL_SELECT_CITY_BY_ID, new Object[]{id}, new CityRowMapper());
     }
 
@@ -60,5 +64,23 @@ public class JdbcCityDao implements CityDao {
         return cities;*/
 
         return jdbcTemplate.query(SQL_SELECT_CITIES, new BeanPropertyRowMapper<>(City.class));
+    }
+
+    @Override
+    public int insert(City entity) {
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+
+        /*jdbcTemplate.update(SQL_INSERT_CITY, new Object[]{entity.getName(), entity.getCountryCode(),
+                entity.getDistrict(), entity.getPopulation()});*/
+
+        jdbcTemplate.update(connection -> {
+            PreparedStatement ps = connection.prepareStatement(SQL_INSERT_CITY, Statement.RETURN_GENERATED_KEYS);
+            ps.setString(1, entity.getName());
+            ps.setString(2, entity.getCountryCode());
+            ps.setString(3, entity.getDistrict());
+            ps.setInt(4, entity.getPopulation());
+            return ps;
+        }, keyHolder);
+        return keyHolder.getKey().intValue();
     }
 }

@@ -1,6 +1,6 @@
 package com.kharitonov.spring_jdbc.entity;
 
-public class City {
+public class City extends Entity{
     private int id;
     private String name;
     private String countryCode;
